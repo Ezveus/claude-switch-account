@@ -2,7 +2,7 @@
 
 Extension navigateur (Manifest V3) pour garder **plusieurs comptes claude.ai** côte à côte et basculer de l'un à l'autre **en un clic** — sans se déconnecter puis se reconnecter à chaque fois.
 
-[![build](https://github.com/Smeagolworms4/claude-switch-account/actions/workflows/build.yml/badge.svg)](https://github.com/Smeagolworms4/claude-switch-account/actions/workflows/build.yml)
+[![build](https://github.com/Ezveus/claude-switch-account/actions/workflows/build.yml/badge.svg)](https://github.com/Ezveus/claude-switch-account/actions/workflows/build.yml)
 
 [!["Buy Me A Coffee"](https://raw.githubusercontent.com/Smeagolworms4/donate-assets/master/coffee.png)](https://www.buymeacoffee.com/smeagolworms4)
 [!["Buy Me A Coffee"](https://raw.githubusercontent.com/Smeagolworms4/donate-assets/master/paypal.png)](https://www.paypal.com/donate/?business=SURRPGEXF4YVU&no_recurring=0&item_name=Hello%2C+I%27m+SmeagolWorms4.+For+my+open+source+projects.%0AThanks+you+very+mutch+%21%21%21&currency_code=EUR)
@@ -29,7 +29,7 @@ Tout reste **en local** dans `chrome.storage.local`. Aucun serveur, aucune tél�
 
 ### Depuis une release
 
-1. Téléchargez le `.zip` depuis [Releases](https://github.com/Smeagolworms4/claude-switch-account/releases) et décompressez-le.
+1. Téléchargez le `.zip` depuis [Releases](https://github.com/Ezveus/claude-switch-account/releases) et décompressez-le.
 2. Ouvrez `chrome://extensions` (ou `brave://extensions`, `edge://extensions`).
 3. Activez le **mode développeur**.
 4. **Charger l'extension non empaquetée** → sélectionnez le dossier décompressé.
@@ -37,7 +37,7 @@ Tout reste **en local** dans `chrome.storage.local`. Aucun serveur, aucune tél�
 ### Depuis les sources
 
 ```bash
-git clone https://github.com/Smeagolworms4/claude-switch-account.git
+git clone https://github.com/Ezveus/claude-switch-account.git
 cd claude-switch-account
 ```
 
@@ -92,15 +92,13 @@ python3 tools/make-icons.py  # régénérer les icônes
 - valide le manifest et la **parité des clés de traduction** entre toutes les langues ;
 - vérifie la syntaxe JS (`node --check`) ;
 - construit le zip et le publie en **artefact** téléchargeable ;
-- sur un tag `v*` : aligne `manifest.version` sur le tag, crée la **release GitHub** avec le zip, puis publie sur le Chrome Web Store.
+- sur un tag `v*` : aligne `manifest.version` sur le tag, crée la **release GitHub** avec le zip.
 
 Publier une version :
 
 ```bash
 git tag v1.0.1 && git push origin v1.0.1
 ```
-
-La configuration initiale de la publication automatique est décrite dans [docs/PUBLISHING.md](docs/PUBLISHING.md).
 
 ## Sécurité & limites
 

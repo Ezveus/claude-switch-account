@@ -2,7 +2,7 @@
 
 Browser extension (Manifest V3) to keep **several claude.ai accounts** side by side and switch between them **in one click** — no logging out and back in every time.
 
-[![build](https://github.com/Smeagolworms4/claude-switch-account/actions/workflows/build.yml/badge.svg)](https://github.com/Smeagolworms4/claude-switch-account/actions/workflows/build.yml)
+[![build](https://github.com/Ezveus/claude-switch-account/actions/workflows/build.yml/badge.svg)](https://github.com/Ezveus/claude-switch-account/actions/workflows/build.yml)
 
 [!["Buy Me A Coffee"](https://raw.githubusercontent.com/Smeagolworms4/donate-assets/master/coffee.png)](https://www.buymeacoffee.com/smeagolworms4)
 [!["Buy Me A Coffee"](https://raw.githubusercontent.com/Smeagolworms4/donate-assets/master/paypal.png)](https://www.paypal.com/donate/?business=SURRPGEXF4YVU&no_recurring=0&item_name=Hello%2C+I%27m+SmeagolWorms4.+For+my+open+source+projects.%0AThanks+you+very+mutch+%21%21%21&currency_code=EUR)
@@ -14,6 +14,25 @@ Browser extension (Manifest V3) to keep **several claude.ai accounts** side by s
 </p>
 
 ---
+
+## About this fork
+
+This fork exists to run code that has been read, and nothing else. It differs from upstream in that:
+
+- it is **never published to a store**: the Chrome Web Store and AMO publishing jobs are removed, so no automatic update can bring in unreviewed code;
+- it is installed with **Load unpacked** from a commit you have reviewed (see [Install](#install));
+- its name ends with "(fork)", so it cannot be mistaken for the store version.
+
+To take upstream changes, review them before merging:
+
+```bash
+git fetch upstream
+git log --oneline main..upstream/main
+git diff main...upstream/main
+git merge upstream/main
+```
+
+Then reload the extension from `chrome://extensions` (or `vivaldi://extensions`).
 
 ## How it works
 
@@ -29,15 +48,15 @@ Everything stays **local** in `chrome.storage.local`. No server, no telemetry, n
 
 ### From a release
 
-1. Download the `.zip` from [Releases](https://github.com/Smeagolworms4/claude-switch-account/releases) and unzip it.
-2. Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`).
+1. Download the `.zip` from [Releases](https://github.com/Ezveus/claude-switch-account/releases) and unzip it.
+2. Open `chrome://extensions` (or `vivaldi://extensions`, `brave://extensions`, `edge://extensions`).
 3. Enable **Developer mode**.
 4. **Load unpacked** → pick the unzipped folder.
 
 ### From source
 
 ```bash
-git clone https://github.com/Smeagolworms4/claude-switch-account.git
+git clone https://github.com/Ezveus/claude-switch-account.git
 cd claude-switch-account
 ```
 
@@ -92,16 +111,13 @@ python3 tools/make-icons.py  # regenerate icons
 - validates the manifest and **translation key parity** across all locales;
 - checks JS syntax (`node --check`);
 - builds the zip and uploads it as a downloadable **artifact**;
-- on a `v*` tag: aligns `manifest.version` with the tag, creates the **GitHub release** with the zip attached, then publishes to the Chrome Web Store.
+- on a `v*` tag: aligns `manifest.version` with the tag, creates the **GitHub release** with the zip attached.
 
 Cutting a release:
 
 ```bash
 git tag v1.0.1 && git push origin v1.0.1
 ```
-
-The one-time setup for automated publishing is documented in
-[docs/PUBLISHING.md](docs/PUBLISHING.md).
 
 ## Security & limitations
 
