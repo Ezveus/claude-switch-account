@@ -136,7 +136,11 @@ function render(state) {
 
 /** Shows the setup form, the unlock form or the account list. */
 function show({ state, vault }) {
-  for (const [name, el] of Object.entries(views)) el.hidden = name !== vault;
+  for (const [name, el] of Object.entries(views)) {
+    el.hidden = name !== vault;
+    // A hidden form must not keep the passphrase until the next lock.
+    if (el.hidden && el.tagName === "FORM") el.reset();
+  }
   if (vault === "unlocked") render(state);
   else views[vault].querySelector("input").focus();
 }
