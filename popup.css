@@ -11,6 +11,9 @@
 
 * { box-sizing: border-box; }
 
+/* Any display rule (.lock is flex) beats the UA's [hidden]: keep it winning. */
+[hidden] { display: none !important; }
+
 body {
   width: 360px;
   margin: 0;
