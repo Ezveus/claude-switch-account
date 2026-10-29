@@ -112,3 +112,65 @@ test("removing an account drops its secret", async () => {
   await b.send("remove", { id: state.accounts[0].id });
   await assert.rejects(b.send("switchTo", { id: state.accounts[0].id }), /errNotFound/);
 });
+
+/* ---------------------------------------------------------- localStorage --- */
+
+async function twoAccounts() {
+  await b.send("setupVault", { passphrase: PASS });
+  b.login("sk-pro");
+  b.setStorage({ "LSS-code-selected-repo": "moduloTech/modulorails" });
+  const pro = (await b.send("addCurrent")).state.accounts[0].id;
+  await b.send("freshSession");
+  b.login("sk-perso");
+  b.setStorage({ theme: "dark" });
+  const perso = (await b.send("addCurrent")).state.accounts.find((a) => a.id !== pro).id;
+  return { pro, perso };
+}
+
+test("each account gets its own localStorage back", async () => {
+  const { pro, perso } = await twoAccounts();
+
+  await b.send("switchTo", { id: pro });
+  assert.deepEqual(b.storage(), { "LSS-code-selected-repo": "moduloTech/modulorails" });
+  await b.send("switchTo", { id: perso });
+  assert.deepEqual(b.storage(), { theme: "dark" });
+});
+
+test("what an account writes before leaving is kept for its return", async () => {
+  const { pro, perso } = await twoAccounts();
+  await b.send("switchTo", { id: pro });
+  b.setStorage({ "LSS-code-selected-repo": "moduloTech/other" });
+  await b.send("switchTo", { id: perso });
+  await b.send("switchTo", { id: pro });
+  assert.deepEqual(b.storage(), { "LSS-code-selected-repo": "moduloTech/other" });
+});
+
+test("a new login starts from an empty localStorage", async () => {
+  await b.send("setupVault", { passphrase: PASS });
+  b.login("sk-pro");
+  b.setStorage({ "LSS-code-selected-repo": "moduloTech/modulorails" });
+  await b.send("addCurrent");
+  await b.send("freshSession");
+  assert.deepEqual(b.storage(), {});
+});
+
+test("the saved localStorage is encrypted too", async () => {
+  await twoAccounts();
+  assert.ok(!JSON.stringify(b.chrome.storage.local.dump()).includes("modulorails"));
+});
+
+test("a failing storage tab leaves both session and storage alone", async () => {
+  const { pro } = await twoAccounts();
+  b.breakStorageTab();
+  await assert.rejects(b.send("switchTo", { id: pro }));
+  assert.equal(b.sessionKey(), "sk-perso");
+  assert.deepEqual(b.storage(), { theme: "dark" });
+});
+
+test("the storage tab is always closed", async () => {
+  const { pro } = await twoAccounts();
+  await b.send("switchTo", { id: pro });
+  b.breakStorageTab();
+  await assert.rejects(b.send("refreshActive"));
+  assert.equal(b.openTabs(), 0);
+});

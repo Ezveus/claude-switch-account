@@ -178,5 +178,8 @@
   },
   "errVaultExists": {
     "message": "Die Sitzungen sind bereits verschlüsselt."
+  },
+  "errStorageTab": {
+    "message": "claude.ai hat nicht rechtzeitig geladen, es wurde nichts geändert. Versuchen Sie es erneut."
   }
 }

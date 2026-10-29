@@ -178,5 +178,8 @@
   },
   "errVaultExists": {
     "message": "Sessions are already encrypted."
+  },
+  "errStorageTab": {
+    "message": "claude.ai did not load in time, so nothing was changed. Try again."
   }
 }

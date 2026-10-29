@@ -178,5 +178,8 @@
   },
   "errVaultExists": {
     "message": "Le sessioni sono già cifrate."
+  },
+  "errStorageTab": {
+    "message": "claude.ai non si è caricato in tempo, quindi non è cambiato nulla. Riprova."
   }
 }

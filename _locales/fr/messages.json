@@ -178,5 +178,8 @@
   },
   "errVaultExists": {
     "message": "Les sessions sont déjà chiffrées."
+  },
+  "errStorageTab": {
+    "message": "claude.ai n'a pas répondu à temps : rien n'a été modifié. Réessayez."
   }
 }
