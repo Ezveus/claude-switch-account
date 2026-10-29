@@ -26,6 +26,7 @@ const SESSION_KEY = "cmc_key";
 // the app, which would otherwise write keys while they are being swapped.
 const STORAGE_PAGE = "https://claude.ai/robots.txt";
 const STORAGE_PAGE_TIMEOUT_MS = 15_000;
+const CLAUDE_TABS = ["https://claude.ai/*", "https://*.claude.ai/*"];
 
 const DEFAULT_STATE = { accounts: [], activeId: null };
 
@@ -214,18 +215,21 @@ function swapStorage(next) {
   return previous;
 }
 
-function waitForLoad(tabId) {
+/** Resolves once `tabId` shows STORAGE_PAGE, fully loaded. Checking the URL
+ *  matters: right after tabs.update() the tab still reports the old page. */
+function waitForStoragePage(tabId) {
   return new Promise((resolve, reject) => {
     const done = () => {
       clearTimeout(timer);
       chrome.tabs.onUpdated.removeListener(onUpdated);
     };
-    const onUpdated = (id, info) => {
-      if (id === tabId && info.status === "complete") {
+    const check = (tab) => {
+      if (tab.status === "complete" && tab.url === STORAGE_PAGE) {
         done();
         resolve();
       }
     };
+    const onUpdated = (id, _info, tab) => id === tabId && check(tab);
     const timer = setTimeout(() => {
       done();
       reject(new Error(t("errStorageTab")));
@@ -233,24 +237,55 @@ function waitForLoad(tabId) {
 
     chrome.tabs.onUpdated.addListener(onUpdated);
     // The page may have finished loading before the listener was in place.
-    chrome.tabs.get(tabId).then((tab) => tab.status === "complete" && onUpdated(tabId, tab), () => {});
+    chrome.tabs.get(tabId).then(check, () => {});
   });
 }
 
-/** Swaps claude.ai's localStorage through a background tab on STORAGE_PAGE,
- *  then closes it. `next` null only reads. */
-async function swapClaudeStorage(next) {
+async function runSwap(tabId, next) {
+  const [{ result }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: swapStorage,
+    args: [next]
+  });
+  return result;
+}
+
+/** Reads claude.ai's localStorage through a background tab, then closes it. */
+async function readClaudeStorage() {
   const tab = await chrome.tabs.create({ url: STORAGE_PAGE, active: false });
   try {
-    await waitForLoad(tab.id);
-    const [{ result }] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: swapStorage,
-      args: [next]
-    });
-    return result;
+    await waitForStoragePage(tab.id);
+    return await runSwap(tab.id, null);
   } finally {
     await chrome.tabs.remove(tab.id).catch(() => {});
+  }
+}
+
+/** Runs `fn(swap)` while no claude.ai app runs. Every claude.ai tab is first
+ *  sent to STORAGE_PAGE: leaving makes the app save its state and stop, so it
+ *  can neither be missed by the capture nor overwrite what gets restored.
+ *  The tabs go back to their own address afterwards, even on failure.
+ *  `swap(next)` runs swapStorage() on that page. */
+async function withAppStopped(fn) {
+  const parked = (await chrome.tabs.query({ url: CLAUDE_TABS })).filter((tab) => tab.url !== STORAGE_PAGE);
+  let spare = null;
+  try {
+    await Promise.all(parked.map((tab) => {
+      const loaded = waitForStoragePage(tab.id);
+      chrome.tabs.update(tab.id, { url: STORAGE_PAGE });
+      return loaded;
+    }));
+
+    let host = parked[0]?.id;
+    if (!host) {
+      spare = await chrome.tabs.create({ url: STORAGE_PAGE, active: false });
+      await waitForStoragePage(spare.id);
+      host = spare.id;
+    }
+    return await fn((next) => runSwap(host, next));
+  } finally {
+    if (spare) await chrome.tabs.remove(spare.id).catch(() => {});
+    await Promise.all(parked.map((tab) => chrome.tabs.update(tab.id, { url: tab.url }).catch(() => {})));
   }
 }
 
@@ -300,7 +335,7 @@ async function snapshotInto(account, secrets) {
   secrets[account.id] = {
     ...secrets[account.id],
     cookies: await readCookies(),
-    localStorage: await swapClaudeStorage(null)
+    localStorage: await readClaudeStorage()
   };
   account.savedAt = Date.now();
 }
@@ -355,49 +390,53 @@ async function switchTo(id) {
     // Checked before clearing anything, or the switch would just log out.
     if (!secrets[id]?.cookies) throw new Error(t("errNotFound"));
 
-    // sessionKey rotates, so re-snapshot the active account before leaving it.
     const current = state.accounts.find((a) => a.id === state.activeId);
     const leaving = current && current.id !== id ? current : null;
-    if (leaving && (await isLoggedIn())) {
-      secrets[leaving.id] = { ...secrets[leaving.id], cookies: await readCookies() };
-      leaving.savedAt = Date.now();
-    }
 
-    // Before the cookies: if the storage tab fails, nothing has changed yet.
-    // Profiles saved before this swap existed start from an empty storage.
-    const previous = await swapClaudeStorage(secrets[id].localStorage || {});
-    if (leaving) secrets[leaving.id] = { ...secrets[leaving.id], localStorage: previous };
+    await withAppStopped(async (swap) => {
+      // sessionKey rotates, so re-snapshot the active account before leaving it.
+      if (leaving && (await isLoggedIn())) {
+        secrets[leaving.id] = { ...secrets[leaving.id], cookies: await readCookies() };
+        leaving.savedAt = Date.now();
+      }
 
-    await clearCookies();
-    await writeCookies(secrets[id].cookies);
+      // Before the cookies: if the swap fails, nothing has changed yet.
+      // Profiles saved before this swap existed start from an empty storage.
+      const previous = await swap(secrets[id].localStorage || {});
+      if (leaving) secrets[leaving.id] = { ...secrets[leaving.id], localStorage: previous };
+
+      await clearCookies();
+      await writeCookies(secrets[id].cookies);
+    });
   });
 
   state.activeId = id;
   await setState(state);
-  await reloadClaudeTabs();
 }
 
 /** Clears the session without touching saved profiles (to add an account). */
 async function startFreshSession() {
   const state = await getState();
   const current = state.accounts.find((a) => a.id === state.activeId);
-  if (current) {
-    await withSecrets(async (secrets) => {
-      if (await isLoggedIn()) {
-        secrets[current.id] = { ...secrets[current.id], cookies: await readCookies() };
-        current.savedAt = Date.now();
+  const leave = (secrets) =>
+    withAppStopped(async (swap) => {
+      const previous = await swap({});
+      if (secrets) {
+        if (await isLoggedIn()) {
+          secrets[current.id] = { ...secrets[current.id], cookies: await readCookies() };
+          current.savedAt = Date.now();
+        }
+        secrets[current.id] = { ...secrets[current.id], localStorage: previous };
       }
-      secrets[current.id] = { ...secrets[current.id], localStorage: await swapClaudeStorage({}) };
+      await clearCookies();
     });
-  } else {
-    // An unsaved session: its storage belongs to nobody, so it just goes.
-    await swapClaudeStorage({});
-  }
 
-  await clearCookies();
+  // An unsaved session's storage belongs to nobody, so it just goes.
+  if (current) await withSecrets(leave);
+  else await leave(null);
+
   state.activeId = null;
   await setState(state);
-  await reloadClaudeTabs();
 }
 
 async function refreshActive() {
@@ -427,11 +466,6 @@ async function removeAccount(id) {
   state.accounts = state.accounts.filter((a) => a.id !== id);
   if (state.activeId === id) state.activeId = null;
   await setState(state);
-}
-
-async function reloadClaudeTabs() {
-  const tabs = await chrome.tabs.query({ url: ["https://claude.ai/*", "https://*.claude.ai/*"] });
-  await Promise.all(tabs.map((tab) => chrome.tabs.reload(tab.id).catch(() => {})));
 }
 
 async function openClaude() {

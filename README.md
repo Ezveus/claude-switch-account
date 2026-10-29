@@ -42,9 +42,9 @@ claude.ai authentication lives in cookies (`sessionKey` chief among them). The e
 
 1. **snapshots** every `claude.ai` / `anthropic.com` cookie into a profile;
 2. fetches the account **name and e-mail** from the claude.ai API to label it automatically;
-3. on switching: re-saves the current session (the `sessionKey` rotates), swaps claude.ai's localStorage, clears the jar, restores the target profile's cookies, then reloads any open claude.ai tab.
+3. on switching: sends every open claude.ai tab to `https://claude.ai/robots.txt`, re-saves the current session (the `sessionKey` rotates), swaps claude.ai's localStorage, clears the jar, restores the target profile's cookies, then sends the tabs back where they were.
 
-The localStorage swap happens in a background tab opened on `https://claude.ai/robots.txt`, then closed. That static file shares the app's localStorage without running the app, so nothing writes to it during the swap. You may see the tab flash in the tab strip.
+`robots.txt` is a static file on claude.ai: it shares the app's localStorage without running the app. Leaving the app first makes it save its state and stop, so it can neither be missed by the capture nor overwrite what gets restored. With no claude.ai tab open, the swap runs in a background tab that closes right after.
 
 Everything stays **local**: profile labels in `chrome.storage.local`, cookies in an encrypted vault next to them. No server, no telemetry, no passwords — only the cookies your browser already holds.
 
@@ -129,7 +129,6 @@ git tag v1.0.1 && git push origin v1.0.1
 ## Security & limitations
 
 - Saved cookies are encrypted with AES-GCM-256, under a key derived from your passphrase with PBKDF2-SHA256 (600,000 iterations). The key lives in `chrome.storage.session`, which is memory-only: the vault locks again when the browser quits, and **🔒 Lock** locks it at once. The passphrase cannot be recovered; forgetting it means deleting the saved sessions.
-- An open claude.ai tab can still write to localStorage between the swap and its reload. Closing claude.ai tabs before switching avoids it.
 - This protects the saved sessions at rest (disk, backups). It does not protect against malware running while the vault is unlocked, and the active session still sits in the browser's own cookie jar.
 - Profiles saved by an earlier, unencrypted version move into the vault when you choose a passphrase. Chrome may keep the old plaintext copy on disk until it compacts its storage; to be safe, sign out of those sessions on claude.ai after migrating and save them again.
 - Only one account is active **per browser profile** at a time: this is switching, not simultaneous isolation (for that, use Chrome profiles or Firefox containers).

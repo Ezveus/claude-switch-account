@@ -136,6 +136,17 @@ test("each account gets its own localStorage back", async () => {
   assert.deepEqual(b.storage(), { theme: "dark" });
 });
 
+test("the open claude.ai tab shows the account switched to", async () => {
+  const { pro, perso } = await twoAccounts();
+
+  await b.send("switchTo", { id: pro });
+  await b.settle();
+  assert.deepEqual(b.shownRepos(), ["moduloTech/modulorails"]);
+  await b.send("switchTo", { id: perso });
+  await b.settle();
+  assert.deepEqual(b.shownRepos(), [null]);
+});
+
 test("what an account writes before leaving is kept for its return", async () => {
   const { pro, perso } = await twoAccounts();
   await b.send("switchTo", { id: pro });
@@ -167,10 +178,29 @@ test("a failing storage tab leaves both session and storage alone", async () => 
   assert.deepEqual(b.storage(), { theme: "dark" });
 });
 
-test("the storage tab is always closed", async () => {
+test("claude.ai tabs go back where they were, even when the swap fails", async () => {
+  const { pro, perso } = await twoAccounts();
+  await b.send("switchTo", { id: pro });
+  assert.deepEqual(b.tabUrls(), ["https://claude.ai/new"]);
+  b.breakStorageTab();
+  await assert.rejects(b.send("switchTo", { id: perso }));
+  assert.deepEqual(b.tabUrls(), ["https://claude.ai/new"]);
+});
+
+test("a storage tab opened for reading is closed again", async () => {
   const { pro } = await twoAccounts();
   await b.send("switchTo", { id: pro });
   b.breakStorageTab();
   await assert.rejects(b.send("refreshActive"));
-  assert.equal(b.openTabs(), 0);
+  assert.deepEqual(b.tabUrls(), ["https://claude.ai/new"]);
+});
+
+test("the swap works with no claude.ai tab open", async () => {
+  const { pro, perso } = await twoAccounts();
+  b.closeAllTabs();
+  await b.send("switchTo", { id: pro });
+  assert.deepEqual(b.storage(), { "LSS-code-selected-repo": "moduloTech/modulorails" });
+  await b.send("switchTo", { id: perso });
+  assert.deepEqual(b.storage(), { theme: "dark" });
+  assert.deepEqual(b.tabUrls(), []);
 });
