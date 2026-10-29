@@ -116,5 +116,67 @@
         "content": "$1"
       }
     }
+  },
+  "vaultSetupTitle": {
+    "message": "Proteger as sessões guardadas"
+  },
+  "vaultSetupHint": {
+    "message": "Escolha uma frase-passe. Ela cifra as sessões guardadas e é pedida uma vez por cada arranque do navegador. Não pode ser recuperada."
+  },
+  "vaultUnlockTitle": {
+    "message": "Sessões bloqueadas"
+  },
+  "vaultUnlockHint": {
+    "message": "Introduza a frase-passe para mudar de conta."
+  },
+  "fieldPassphrase": {
+    "message": "Frase-passe"
+  },
+  "fieldConfirm": {
+    "message": "Confirmar a frase-passe"
+  },
+  "btnSetup": {
+    "message": "Cifrar e continuar"
+  },
+  "btnUnlock": {
+    "message": "Desbloquear"
+  },
+  "btnLock": {
+    "message": "🔒 Bloquear"
+  },
+  "btnReset": {
+    "message": "Esqueceu a frase-passe? Apagar as sessões"
+  },
+  "confirmReset": {
+    "message": "Apagar todas as sessões guardadas? A sessão atual do claude.ai é mantida."
+  },
+  "okEncrypted": {
+    "message": "Sessões guardadas cifradas."
+  },
+  "okLocked": {
+    "message": "Sessões bloqueadas."
+  },
+  "errLocked": {
+    "message": "As sessões estão bloqueadas: introduza a frase-passe."
+  },
+  "errNoVault": {
+    "message": "Ainda não há sessões cifradas."
+  },
+  "errBadPassphrase": {
+    "message": "Frase-passe incorreta."
+  },
+  "errPassphraseShort": {
+    "message": "A frase-passe precisa de pelo menos $MIN$ caracteres.",
+    "placeholders": {
+      "min": {
+        "content": "$1"
+      }
+    }
+  },
+  "errPassphraseMismatch": {
+    "message": "As duas frases-passe são diferentes."
+  },
+  "errVaultExists": {
+    "message": "As sessões já estão cifradas."
   }
 }

@@ -2,15 +2,24 @@
  * Claude Switch Account — service worker.
  *
  * How it works: claude.ai authentication lives in cookies (sessionKey chief
- * among them). We snapshot every cookie for the domain into a profile stored in
- * chrome.storage.local; switching means clearing the current jar and restoring
- * the target profile's cookies.
+ * among them). We snapshot every cookie for the domain into a profile;
+ * switching means clearing the current jar and restoring the target profile's
+ * cookies.
+ *
+ * Profiles are split in two: labels and colors live in plaintext under
+ * STORAGE_KEY, while the cookies live in a vault encrypted with the user's
+ * passphrase (see vault.js). The derived key is kept in chrome.storage.session,
+ * which is memory-only, so the vault locks again when the browser quits.
  */
+
+import * as Vault from "./vault.js";
 
 const t = (key, ...subs) => chrome.i18n.getMessage(key, subs.map(String)) || key;
 
 const COOKIE_DOMAINS = ["claude.ai", "anthropic.com"];
 const STORAGE_KEY = "cmc_state";
+const VAULT_KEY = "cmc_vault";
+const SESSION_KEY = "cmc_key";
 
 const DEFAULT_STATE = { accounts: [], activeId: null };
 
@@ -29,6 +38,84 @@ async function getState() {
 async function setState(state) {
   await chrome.storage.local.set({ [STORAGE_KEY]: state });
   return state;
+}
+
+/* ---------------------------------------------------------------- vault --- */
+
+async function getVault() {
+  return (await chrome.storage.local.get(VAULT_KEY))[VAULT_KEY] || null;
+}
+
+async function getKey() {
+  const raw = (await chrome.storage.session.get(SESSION_KEY))[SESSION_KEY];
+  return raw ? Vault.importKey(raw) : null;
+}
+
+async function vaultStatus() {
+  if (!(await getVault())) return "none";
+  return (await getKey()) ? "unlocked" : "locked";
+}
+
+/** Runs `mutate` on the decrypted secrets ({ [accountId]: { cookies } }), then
+ *  re-encrypts them. */
+async function withSecrets(mutate) {
+  const vault = await getVault();
+  const key = vault && (await getKey());
+  if (!key) throw new Error(t("errLocked"));
+  const secrets = await Vault.open(key, vault);
+  const result = await mutate(secrets);
+  await chrome.storage.local.set({ [VAULT_KEY]: await Vault.seal(key, secrets, vault) });
+  return result;
+}
+
+async function rememberKey(key) {
+  await chrome.storage.session.set({ [SESSION_KEY]: await Vault.exportKey(key) });
+}
+
+/** Encrypts the profiles for the first time. Profiles saved before the vault
+ *  existed carry their cookies in plaintext: they move into the vault. */
+async function setupVault(passphrase) {
+  if (await getVault()) throw new Error(t("errVaultExists"));
+  if (typeof passphrase !== "string" || passphrase.length < Vault.MIN_PASSPHRASE_LENGTH) {
+    throw new Error(t("errPassphraseShort", Vault.MIN_PASSPHRASE_LENGTH));
+  }
+
+  const state = await getState();
+  const secrets = {};
+  for (const account of state.accounts) {
+    if (account.cookies) secrets[account.id] = { cookies: account.cookies };
+  }
+
+  const { key, vault } = await Vault.create(passphrase, secrets);
+  // Vault first: if the worker dies in between, the plaintext copy survives.
+  await chrome.storage.local.set({ [VAULT_KEY]: vault });
+  await rememberKey(key);
+
+  for (const account of state.accounts) delete account.cookies;
+  await setState(state);
+}
+
+async function unlockVault(passphrase) {
+  const vault = await getVault();
+  if (!vault) throw new Error(t("errNoVault"));
+  let key;
+  try {
+    ({ key } = await Vault.unlock(passphrase, vault));
+  } catch {
+    throw new Error(t("errBadPassphrase"));
+  }
+  await rememberKey(key);
+}
+
+async function lockVault() {
+  await chrome.storage.session.remove(SESSION_KEY);
+}
+
+/** Forgotten passphrase: drops every profile. The live session is untouched. */
+async function resetVault() {
+  await chrome.storage.session.remove(SESSION_KEY);
+  await chrome.storage.local.remove(VAULT_KEY);
+  await setState({ ...DEFAULT_STATE });
 }
 
 /* -------------------------------------------------------------- cookies --- */
@@ -146,10 +233,9 @@ async function isLoggedIn() {
 
 /* -------------------------------------------------------------- actions --- */
 
-async function snapshotInto(account) {
-  account.cookies = await readCookies();
+async function snapshotInto(account, secrets) {
+  secrets[account.id] = { ...secrets[account.id], cookies: await readCookies() };
   account.savedAt = Date.now();
-  return account;
 }
 
 /** Saves the currently active session as a new profile. */
@@ -158,11 +244,9 @@ async function addCurrentAccount(label) {
 
   const state = await getState();
   const identity = await probeIdentity();
-  const cookies = await readCookies();
 
-  const id = crypto.randomUUID();
   const account = {
-    id,
+    id: crypto.randomUUID(),
     label:
       label
       || identity.name
@@ -171,9 +255,7 @@ async function addCurrentAccount(label) {
     name: identity.name,
     email: identity.email,
     org: identity.org,
-    color: COLORS[state.accounts.length % COLORS.length],
-    cookies,
-    savedAt: Date.now()
+    color: COLORS[state.accounts.length % COLORS.length]
   };
 
   // Same e-mail already saved -> overwrite instead of duplicating.
@@ -183,19 +265,17 @@ async function addCurrentAccount(label) {
 
   if (existing) {
     Object.assign(existing, {
-      cookies,
-      savedAt: account.savedAt,
       name: identity.name || existing.name,
       org: identity.org || existing.org
     });
-    state.activeId = existing.id;
   } else {
     state.accounts.push(account);
-    state.activeId = id;
   }
 
+  const saved = existing || account;
+  await withSecrets((secrets) => snapshotInto(saved, secrets));
+  state.activeId = saved.id;
   await setState(state);
-  return state;
 }
 
 /** Switches to a profile, re-saving the current session first. */
@@ -204,32 +284,37 @@ async function switchTo(id) {
   const target = state.accounts.find((a) => a.id === id);
   if (!target) throw new Error(t("errNotFound"));
 
-  // sessionKey rotates, so re-snapshot the active account before leaving it.
-  const current = state.accounts.find((a) => a.id === state.activeId);
-  if (current && current.id !== id && (await isLoggedIn())) {
-    await snapshotInto(current);
-  }
+  await withSecrets(async (secrets) => {
+    // Checked before clearing anything, or the switch would just log out.
+    if (!secrets[id]?.cookies) throw new Error(t("errNotFound"));
 
-  await clearCookies();
-  await writeCookies(target.cookies);
+    // sessionKey rotates, so re-snapshot the active account before leaving it.
+    const current = state.accounts.find((a) => a.id === state.activeId);
+    if (current && current.id !== id && (await isLoggedIn())) {
+      await snapshotInto(current, secrets);
+    }
+
+    await clearCookies();
+    await writeCookies(secrets[id].cookies);
+  });
 
   state.activeId = id;
   await setState(state);
   await reloadClaudeTabs();
-  return state;
 }
 
 /** Clears the session without touching saved profiles (to add an account). */
 async function startFreshSession() {
   const state = await getState();
   const current = state.accounts.find((a) => a.id === state.activeId);
-  if (current && (await isLoggedIn())) await snapshotInto(current);
+  if (current && (await isLoggedIn())) {
+    await withSecrets((secrets) => snapshotInto(current, secrets));
+  }
 
   await clearCookies();
   state.activeId = null;
   await setState(state);
   await reloadClaudeTabs();
-  return state;
 }
 
 async function refreshActive() {
@@ -238,26 +323,27 @@ async function refreshActive() {
   if (!current) throw new Error(t("errNoActive"));
   if (!(await isLoggedIn())) throw new Error(t("errNothingToSave"));
 
-  await snapshotInto(current);
+  await withSecrets((secrets) => snapshotInto(current, secrets));
   const identity = await probeIdentity();
   if (identity.email) current.email = identity.email;
   if (identity.name) current.name = identity.name;
   if (identity.org) current.org = identity.org;
-  return setState(state);
+  await setState(state);
 }
 
 async function renameAccount(id, label) {
   const state = await getState();
   const account = state.accounts.find((a) => a.id === id);
   if (account) account.label = label;
-  return setState(state);
+  await setState(state);
 }
 
 async function removeAccount(id) {
+  await withSecrets((secrets) => delete secrets[id]);
   const state = await getState();
   state.accounts = state.accounts.filter((a) => a.id !== id);
   if (state.activeId === id) state.activeId = null;
-  return setState(state);
+  await setState(state);
 }
 
 async function reloadClaudeTabs() {
@@ -277,8 +363,23 @@ async function openClaude() {
 
 /* ---------------------------------------------------------------- router --- */
 
+/** What the popup renders. Never carries cookies, even legacy plaintext ones. */
+async function view() {
+  const state = await getState();
+  return {
+    state: { ...state, accounts: state.accounts.map(({ cookies, ...account }) => account) },
+    loggedIn: await isLoggedIn(),
+    vault: await vaultStatus()
+  };
+}
+
+// Every handler answers with a fresh view, so the popup always knows the vault state.
 const HANDLERS = {
-  getState: async () => ({ state: await getState(), loggedIn: await isLoggedIn() }),
+  getState: async () => {},
+  setupVault: ({ passphrase }) => setupVault(passphrase),
+  unlock: ({ passphrase }) => unlockVault(passphrase),
+  lock: () => lockVault(),
+  resetVault: () => resetVault(),
   addCurrent: ({ label }) => addCurrentAccount(label),
   switchTo: ({ id }) => switchTo(id),
   freshSession: () => startFreshSession(),
@@ -295,6 +396,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return false;
   }
   handler(msg)
+    .then(view)
     .then((data) => sendResponse({ ok: true, data }))
     .catch((err) => sendResponse({ ok: false, error: err?.message || String(err) }));
   return true; // async response

@@ -43,7 +43,10 @@ jobs:
           '
 
       - name: Check JS syntax
-        run: for f in background.js popup.js; do node --check "$f"; done
+        run: for f in background.js popup.js vault.js; do node --check "$f"; done
+
+      - name: Run tests
+        run: node --test tests/*.test.mjs
 
       - name: Sync version with tag
         if: startsWith(github.ref, 'refs/tags/v')

@@ -116,5 +116,67 @@
         "content": "$1"
       }
     }
+  },
+  "vaultSetupTitle": {
+    "message": "Proteggi le sessioni salvate"
+  },
+  "vaultSetupHint": {
+    "message": "Scegli una passphrase. Cifra le sessioni salvate e viene richiesta una volta a ogni avvio del browser. Non è recuperabile."
+  },
+  "vaultUnlockTitle": {
+    "message": "Sessioni bloccate"
+  },
+  "vaultUnlockHint": {
+    "message": "Inserisci la passphrase per cambiare account."
+  },
+  "fieldPassphrase": {
+    "message": "Passphrase"
+  },
+  "fieldConfirm": {
+    "message": "Conferma la passphrase"
+  },
+  "btnSetup": {
+    "message": "Cifra e continua"
+  },
+  "btnUnlock": {
+    "message": "Sblocca"
+  },
+  "btnLock": {
+    "message": "🔒 Blocca"
+  },
+  "btnReset": {
+    "message": "Passphrase dimenticata? Elimina le sessioni"
+  },
+  "confirmReset": {
+    "message": "Eliminare tutte le sessioni salvate? La sessione claude.ai attuale viene mantenuta."
+  },
+  "okEncrypted": {
+    "message": "Sessioni salvate cifrate."
+  },
+  "okLocked": {
+    "message": "Sessioni bloccate."
+  },
+  "errLocked": {
+    "message": "Le sessioni sono bloccate: inserisci la passphrase."
+  },
+  "errNoVault": {
+    "message": "Nessuna sessione cifrata per ora."
+  },
+  "errBadPassphrase": {
+    "message": "Passphrase errata."
+  },
+  "errPassphraseShort": {
+    "message": "La passphrase richiede almeno $MIN$ caratteri.",
+    "placeholders": {
+      "min": {
+        "content": "$1"
+      }
+    }
+  },
+  "errPassphraseMismatch": {
+    "message": "Le due passphrase non coincidono."
+  },
+  "errVaultExists": {
+    "message": "Le sessioni sono già cifrate."
   }
 }

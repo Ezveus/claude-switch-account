@@ -116,5 +116,67 @@
         "content": "$1"
       }
     }
+  },
+  "vaultSetupTitle": {
+    "message": "Protect saved sessions"
+  },
+  "vaultSetupHint": {
+    "message": "Choose a passphrase. It encrypts the saved sessions and is asked once per browser launch. It cannot be recovered."
+  },
+  "vaultUnlockTitle": {
+    "message": "Sessions locked"
+  },
+  "vaultUnlockHint": {
+    "message": "Enter your passphrase to switch accounts."
+  },
+  "fieldPassphrase": {
+    "message": "Passphrase"
+  },
+  "fieldConfirm": {
+    "message": "Confirm passphrase"
+  },
+  "btnSetup": {
+    "message": "Encrypt and continue"
+  },
+  "btnUnlock": {
+    "message": "Unlock"
+  },
+  "btnLock": {
+    "message": "🔒 Lock"
+  },
+  "btnReset": {
+    "message": "Forgot the passphrase? Delete saved sessions"
+  },
+  "confirmReset": {
+    "message": "Delete every saved session? The current claude.ai session is kept."
+  },
+  "okEncrypted": {
+    "message": "Saved sessions encrypted."
+  },
+  "okLocked": {
+    "message": "Sessions locked."
+  },
+  "errLocked": {
+    "message": "Sessions are locked: enter your passphrase."
+  },
+  "errNoVault": {
+    "message": "No encrypted sessions yet."
+  },
+  "errBadPassphrase": {
+    "message": "Wrong passphrase."
+  },
+  "errPassphraseShort": {
+    "message": "The passphrase needs at least $MIN$ characters.",
+    "placeholders": {
+      "min": {
+        "content": "$1"
+      }
+    }
+  },
+  "errPassphraseMismatch": {
+    "message": "The two passphrases differ."
+  },
+  "errVaultExists": {
+    "message": "Sessions are already encrypted."
   }
 }

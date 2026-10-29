@@ -6,6 +6,7 @@ const $ = (id) => document.getElementById(id);
 const listEl = $("list");
 const emptyEl = $("empty");
 const statusEl = $("status");
+const views = { none: $("setup"), locked: $("unlock"), unlocked: $("accounts") };
 
 let busy = false;
 
@@ -17,6 +18,9 @@ function localizeDom() {
   }
   for (const el of document.querySelectorAll("[data-i18n-title]")) {
     el.title = t(el.dataset.i18nTitle);
+  }
+  for (const el of document.querySelectorAll("[data-i18n-placeholder]")) {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
   }
 }
 
@@ -130,15 +134,20 @@ function render(state) {
   }
 }
 
+/** Shows the setup form, the unlock form or the account list. */
+function show({ state, vault }) {
+  for (const [name, el] of Object.entries(views)) el.hidden = name !== vault;
+  if (vault === "unlocked") render(state);
+  else views[vault].querySelector("input").focus();
+}
+
 /** Wraps an action: double-click lock, re-render, error reporting. */
 async function run(action) {
   if (busy) return;
   busy = true;
   document.querySelectorAll("button").forEach((b) => (b.disabled = true));
   try {
-    const state = await action();
-    if (state?.accounts) render(state);
-    else await load();
+    show(await action());
   } catch (err) {
     notify(err.message);
   } finally {
@@ -148,35 +157,68 @@ async function run(action) {
 }
 
 async function load() {
-  const { state, loggedIn } = await send("getState");
-  render(state);
-  if (!loggedIn && state.accounts.length) notify(t("warnNoSession"));
-  return state;
+  const view = await send("getState");
+  show(view);
+  if (view.vault === "unlocked" && !view.loggedIn && view.state.accounts.length) {
+    notify(t("warnNoSession"));
+  }
 }
 
 localizeDom();
 
 $("add").addEventListener("click", () =>
   run(async () => {
-    const state = await send("addCurrent");
+    const view = await send("addCurrent");
     notify(t("okSaved"), true);
-    return state;
+    return view;
   })
 );
 
 $("refresh").addEventListener("click", () =>
   run(async () => {
-    const state = await send("refreshActive");
+    const view = await send("refreshActive");
     notify(t("okRefreshed"), true);
-    return state;
+    return view;
   })
 );
 
 $("fresh").addEventListener("click", () =>
   run(async () => {
-    const state = await send("freshSession");
+    const view = await send("freshSession");
     notify(t("okFresh"), true);
-    return state;
+    return view;
+  })
+);
+
+$("setup").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const passphrase = $("setup-pass").value;
+  if (passphrase !== $("setup-confirm").value) return notify(t("errPassphraseMismatch"));
+  run(async () => {
+    const view = await send("setupVault", { passphrase });
+    notify(t("okEncrypted"), true);
+    return view;
+  });
+});
+
+$("unlock").addEventListener("submit", (e) => {
+  e.preventDefault();
+  run(async () => {
+    const view = await send("unlock", { passphrase: $("unlock-pass").value });
+    notify("");
+    return view;
+  });
+});
+
+$("reset").addEventListener("click", () => {
+  if (confirm(t("confirmReset"))) run(() => send("resetVault"));
+});
+
+$("lock").addEventListener("click", () =>
+  run(async () => {
+    const view = await send("lock");
+    notify(t("okLocked"), true);
+    return view;
   })
 );
 

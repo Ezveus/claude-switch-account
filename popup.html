@@ -13,20 +13,39 @@
 
     <div id="status" class="status" hidden></div>
 
-    <ul id="list" class="list"></ul>
+    <form id="setup" class="lock" hidden>
+      <b data-i18n="vaultSetupTitle"></b>
+      <p data-i18n="vaultSetupHint"></p>
+      <input id="setup-pass" type="password" autocomplete="new-password" required data-i18n-placeholder="fieldPassphrase" />
+      <input id="setup-confirm" type="password" autocomplete="new-password" required data-i18n-placeholder="fieldConfirm" />
+      <button class="primary" type="submit" data-i18n="btnSetup"></button>
+    </form>
 
-    <p id="empty" class="empty" hidden>
-      <b data-i18n="emptyTitle"></b><br />
-      <span data-i18n="emptyHint"></span>
-    </p>
+    <form id="unlock" class="lock" hidden>
+      <b data-i18n="vaultUnlockTitle"></b>
+      <p data-i18n="vaultUnlockHint"></p>
+      <input id="unlock-pass" type="password" autocomplete="current-password" required data-i18n-placeholder="fieldPassphrase" />
+      <button class="primary" type="submit" data-i18n="btnUnlock"></button>
+      <button id="reset" class="ghost small" type="button" data-i18n="btnReset"></button>
+    </form>
 
-    <footer>
-      <button id="add" class="primary" data-i18n="btnAdd"></button>
-      <div class="row">
-        <button id="refresh" class="ghost small" data-i18n="btnRefresh"></button>
-        <button id="fresh" class="ghost small" data-i18n="btnFresh"></button>
-      </div>
-    </footer>
+    <main id="accounts" hidden>
+      <ul id="list" class="list"></ul>
+
+      <p id="empty" class="empty" hidden>
+        <b data-i18n="emptyTitle"></b><br />
+        <span data-i18n="emptyHint"></span>
+      </p>
+
+      <footer>
+        <button id="add" class="primary" data-i18n="btnAdd"></button>
+        <div class="row">
+          <button id="refresh" class="ghost small" data-i18n="btnRefresh"></button>
+          <button id="fresh" class="ghost small" data-i18n="btnFresh"></button>
+          <button id="lock" class="ghost small" data-i18n="btnLock"></button>
+        </div>
+      </footer>
+    </main>
 
     <script src="popup.js"></script>
   </body>

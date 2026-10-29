@@ -116,5 +116,67 @@
         "content": "$1"
       }
     }
+  },
+  "vaultSetupTitle": {
+    "message": "Gespeicherte Sitzungen schützen"
+  },
+  "vaultSetupHint": {
+    "message": "Wählen Sie eine Passphrase. Sie verschlüsselt die gespeicherten Sitzungen und wird einmal pro Browserstart abgefragt. Sie kann nicht wiederhergestellt werden."
+  },
+  "vaultUnlockTitle": {
+    "message": "Sitzungen gesperrt"
+  },
+  "vaultUnlockHint": {
+    "message": "Geben Sie Ihre Passphrase ein, um das Konto zu wechseln."
+  },
+  "fieldPassphrase": {
+    "message": "Passphrase"
+  },
+  "fieldConfirm": {
+    "message": "Passphrase bestätigen"
+  },
+  "btnSetup": {
+    "message": "Verschlüsseln und fortfahren"
+  },
+  "btnUnlock": {
+    "message": "Entsperren"
+  },
+  "btnLock": {
+    "message": "🔒 Sperren"
+  },
+  "btnReset": {
+    "message": "Passphrase vergessen? Sitzungen löschen"
+  },
+  "confirmReset": {
+    "message": "Alle gespeicherten Sitzungen löschen? Die aktuelle claude.ai-Sitzung bleibt erhalten."
+  },
+  "okEncrypted": {
+    "message": "Gespeicherte Sitzungen verschlüsselt."
+  },
+  "okLocked": {
+    "message": "Sitzungen gesperrt."
+  },
+  "errLocked": {
+    "message": "Die Sitzungen sind gesperrt: Geben Sie Ihre Passphrase ein."
+  },
+  "errNoVault": {
+    "message": "Noch keine verschlüsselten Sitzungen."
+  },
+  "errBadPassphrase": {
+    "message": "Falsche Passphrase."
+  },
+  "errPassphraseShort": {
+    "message": "Die Passphrase braucht mindestens $MIN$ Zeichen.",
+    "placeholders": {
+      "min": {
+        "content": "$1"
+      }
+    }
+  },
+  "errPassphraseMismatch": {
+    "message": "Die beiden Passphrasen stimmen nicht überein."
+  },
+  "errVaultExists": {
+    "message": "Die Sitzungen sind bereits verschlüsselt."
   }
 }

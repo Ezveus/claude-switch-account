@@ -116,5 +116,67 @@
         "content": "$1"
       }
     }
+  },
+  "vaultSetupTitle": {
+    "message": "Protéger les sessions enregistrées"
+  },
+  "vaultSetupHint": {
+    "message": "Choisissez une phrase de passe. Elle chiffre les sessions enregistrées et sera demandée une fois par lancement du navigateur. Elle est irrécupérable."
+  },
+  "vaultUnlockTitle": {
+    "message": "Sessions verrouillées"
+  },
+  "vaultUnlockHint": {
+    "message": "Saisissez votre phrase de passe pour changer de compte."
+  },
+  "fieldPassphrase": {
+    "message": "Phrase de passe"
+  },
+  "fieldConfirm": {
+    "message": "Confirmer la phrase de passe"
+  },
+  "btnSetup": {
+    "message": "Chiffrer et continuer"
+  },
+  "btnUnlock": {
+    "message": "Déverrouiller"
+  },
+  "btnLock": {
+    "message": "🔒 Verrouiller"
+  },
+  "btnReset": {
+    "message": "Phrase de passe oubliée ? Supprimer les sessions"
+  },
+  "confirmReset": {
+    "message": "Supprimer toutes les sessions enregistrées ? La session claude.ai en cours est conservée."
+  },
+  "okEncrypted": {
+    "message": "Sessions enregistrées chiffrées."
+  },
+  "okLocked": {
+    "message": "Sessions verrouillées."
+  },
+  "errLocked": {
+    "message": "Les sessions sont verrouillées : saisissez votre phrase de passe."
+  },
+  "errNoVault": {
+    "message": "Aucune session chiffrée pour l'instant."
+  },
+  "errBadPassphrase": {
+    "message": "Phrase de passe incorrecte."
+  },
+  "errPassphraseShort": {
+    "message": "La phrase de passe doit compter au moins $MIN$ caractères.",
+    "placeholders": {
+      "min": {
+        "content": "$1"
+      }
+    }
+  },
+  "errPassphraseMismatch": {
+    "message": "Les deux phrases de passe diffèrent."
+  },
+  "errVaultExists": {
+    "message": "Les sessions sont déjà chiffrées."
   }
 }

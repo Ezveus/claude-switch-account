@@ -59,6 +59,31 @@ h1 {
   text-align: center;
 }
 
+/* --- passphrase forms --- */
+
+.lock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lock p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.lock input {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.lock input:focus { outline: none; border-color: var(--accent); }
+
 /* --- liste des comptes --- */
 
 .list {

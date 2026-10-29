@@ -20,7 +20,7 @@ rm -rf dist
 mkdir -p dist
 
 zip -r -q "$OUT" \
-  manifest.json background.js popup.html popup.css popup.js \
+  manifest.json background.js vault.js popup.html popup.css popup.js \
   _locales icons \
   -x '*.DS_Store'
 

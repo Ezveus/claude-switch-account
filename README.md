@@ -21,7 +21,8 @@ This fork exists to run code that has been read, and nothing else. It differs fr
 
 - it is **never published to a store**: the Chrome Web Store and AMO publishing jobs are removed, so no automatic update can bring in unreviewed code;
 - it is installed with **Load unpacked** from a commit you have reviewed (see [Install](#install));
-- its name ends with "(fork)", so it cannot be mistaken for the store version.
+- its name ends with "(fork)", so it cannot be mistaken for the store version;
+- saved sessions are **encrypted with a passphrase** (see [Security](#security--limitations)).
 
 To take upstream changes, review them before merging:
 
@@ -42,7 +43,7 @@ claude.ai authentication lives in cookies (`sessionKey` chief among them). The e
 2. fetches the account **name and e-mail** from the claude.ai API to label it automatically;
 3. on switching: re-saves the current session (the `sessionKey` rotates), clears the jar, restores the target profile's cookies, then reloads any open claude.ai tab.
 
-Everything stays **local** in `chrome.storage.local`. No server, no telemetry, no passwords — only the cookies your browser already holds.
+Everything stays **local**: profile labels in `chrome.storage.local`, cookies in an encrypted vault next to them. No server, no telemetry, no passwords — only the cookies your browser already holds.
 
 ## Install
 
@@ -92,6 +93,8 @@ Adding a language = copy `_locales/en/messages.json` to `_locales/<code>/message
 ```
 manifest.json          # MV3, cookies/storage/tabs permissions
 background.js          # service worker: cookie snapshot / clear / restore
+vault.js               # passphrase encryption of the saved cookies
+tests/                 # node --test suites, with an in-memory chrome.* mock
 popup.html/.css/.js    # account list UI
 _locales/<lang>/       # translations
 icons/                 # generated icons
@@ -110,6 +113,7 @@ python3 tools/make-icons.py  # regenerate icons
 
 - validates the manifest and **translation key parity** across all locales;
 - checks JS syntax (`node --check`);
+- runs the tests (`node --test tests/*.test.mjs`);
 - builds the zip and uploads it as a downloadable **artifact**;
 - on a `v*` tag: aligns `manifest.version` with the tag, creates the **GitHub release** with the zip attached.
 
@@ -121,7 +125,9 @@ git tag v1.0.1 && git push origin v1.0.1
 
 ## Security & limitations
 
-- Session cookies are stored **in plaintext** in the extension's local storage — same as your browser's cookie jar. On a shared machine, delete the profiles before walking away.
+- Saved cookies are encrypted with AES-GCM-256, under a key derived from your passphrase with PBKDF2-SHA256 (600,000 iterations). The key lives in `chrome.storage.session`, which is memory-only: the vault locks again when the browser quits, and **🔒 Lock** locks it at once. The passphrase cannot be recovered; forgetting it means deleting the saved sessions.
+- This protects the saved sessions at rest (disk, backups). It does not protect against malware running while the vault is unlocked, and the active session still sits in the browser's own cookie jar.
+- Profiles saved by an earlier, unencrypted version move into the vault when you choose a passphrase. Chrome may keep the old plaintext copy on disk until it compacts its storage; to be safe, sign out of those sessions on claude.ai after migrating and save them again.
 - Only one account is active **per browser profile** at a time: this is switching, not simultaneous isolation (for that, use Chrome profiles or Firefox containers).
 - Unofficial extension, unaffiliated with Anthropic.
 - Tested on Chrome / Brave / Edge. Firefox needs a manifest variant (`background.scripts`).
