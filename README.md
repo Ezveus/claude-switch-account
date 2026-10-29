@@ -133,7 +133,7 @@ git tag v1.0.1 && git push origin v1.0.1
 - Profiles saved by an earlier, unencrypted version move into the vault when you choose a passphrase. Chrome may keep the old plaintext copy on disk until it compacts its storage; to be safe, sign out of those sessions on claude.ai after migrating and save them again.
 - Only one account is active **per browser profile** at a time: this is switching, not simultaneous isolation (for that, use Chrome profiles or Firefox containers).
 - Unofficial extension, unaffiliated with Anthropic.
-- Tested on Chrome / Brave / Edge. Firefox needs a manifest variant (`background.scripts`).
+- Chromium only (Chrome, Brave, Edge, Vivaldi): Firefox support was dropped in this fork.
 
 ## Support
 

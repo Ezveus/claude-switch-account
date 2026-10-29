@@ -19,17 +19,6 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "claude-switch-account@smeagolworms4",
-      "strict_min_version": "140.0",
-      "data_collection_permissions": {
-        "required": [
-          "none"
-        ]
-      }
-    }
-  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "__MSG_appTitle__",

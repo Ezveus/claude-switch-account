@@ -105,7 +105,7 @@ git tag v1.0.1 && git push origin v1.0.1
 - Les cookies de session sont stockés **en clair** dans le stockage local de l'extension — comme dans le jar de cookies du navigateur. Sur une machine partagée, supprimez les profils avant de partir.
 - Un seul compte est actif **par profil navigateur** à un instant donné : c'est une bascule, pas du cloisonnement simultané (pour du simultané, utilisez les profils Chrome ou les conteneurs Firefox).
 - Extension non officielle, sans lien avec Anthropic.
-- Testée sur Chrome / Brave / Edge. Firefox nécessite une variante du manifest (`background.scripts`).
+- Chromium uniquement (Chrome, Brave, Edge, Vivaldi) : ce fork ne prend plus en charge Firefox.
 
 ## Soutenir le projet
 
