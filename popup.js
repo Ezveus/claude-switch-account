@@ -214,7 +214,7 @@ $("unlock").addEventListener("submit", (e) => {
   });
 });
 
-$("reset").addEventListener("click", () => {
+$("reset-vault").addEventListener("click", () => {
   if (confirm(t("confirmReset"))) run(() => send("resetVault"));
 });
 
